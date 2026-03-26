@@ -1,3 +1,7 @@
 dataset/*
 glove/*
 **__pycache__**/*
+outputs/*
+lime-cikm25/*
+crown-www25/*
+tests/*

@@ -69,6 +69,20 @@ class WorkspacePathTests(unittest.TestCase):
 
         self.assertEqual(module.get_default_base_dir(), str(ROOT))
 
+    def test_build_large_utils_glove_path_priority(self):
+        module = load_module("build_large_utils_for_test", "build_large_utils.py")
+        default_glove = os.path.join(str(ROOT), "dataset", "glove", "glove.840B.300d.txt")
+
+        self.assertEqual(module.resolve_glove_file(None, {}), default_glove)
+        self.assertEqual(
+            module.resolve_glove_file(None, {"MIND_GLOVE_FILE": "env-glove.txt"}),
+            "env-glove.txt",
+        )
+        self.assertEqual(
+            module.resolve_glove_file("cli-glove.txt", {"MIND_GLOVE_FILE": "env-glove.txt"}),
+            "cli-glove.txt",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
