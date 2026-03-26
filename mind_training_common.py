@@ -1,7 +1,6 @@
 import collections
 import os
 from pathlib import Path
-from urllib.request import urlretrieve
 import zipfile
 
 
@@ -44,20 +43,28 @@ def ensure_mind_context_embeddings(size: str):
     if not missing_splits:
         return
 
-    graph_path = ensure_wikidata_graph()
-    relations = load_wikidata_relations(graph_path)
-    entity_embeddings = load_entity_embeddings(split_paths.values())
-    context_embeddings = build_context_embeddings(entity_embeddings, relations)
+    graph_path = find_local_wikidata_graph()
+    if graph_path is not None:
+        relations = load_wikidata_relations(graph_path)
+        entity_embeddings = load_entity_embeddings(split_paths.values())
+        context_embeddings = build_context_embeddings(entity_embeddings, relations)
+
+        for split_name in missing_splits:
+            write_context_embeddings(
+                entity_embedding_file=split_paths[split_name] / "entity_embedding.vec",
+                context_embedding_file=split_paths[split_name] / "context_embedding.vec",
+                context_embeddings=context_embeddings,
+            )
+        return
 
     for split_name in missing_splits:
-        write_context_embeddings(
+        copy_entity_embeddings_as_context(
             entity_embedding_file=split_paths[split_name] / "entity_embedding.vec",
             context_embedding_file=split_paths[split_name] / "context_embedding.vec",
-            context_embeddings=context_embeddings,
         )
 
 
-def ensure_wikidata_graph():
+def find_local_wikidata_graph():
     download_root = DATASET_ROOT / "download"
     zip_path = download_root / "wikidata-graph.zip"
     extract_root = download_root / "wikidata-graph"
@@ -66,17 +73,13 @@ def ensure_wikidata_graph():
     if graph_path.exists():
         return graph_path
 
-    download_root.mkdir(parents=True, exist_ok=True)
     if not zip_path.exists():
-        urlretrieve(WIKIDATA_GRAPH_URL, zip_path)
+        return None
 
     extract_root.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path) as archive:
         archive.extractall(download_root)
-
-    if not graph_path.exists():
-        raise FileNotFoundError(f"wikidata graph not found after extraction: {graph_path}")
-    return graph_path
+    return graph_path if graph_path.exists() else None
 
 
 def load_wikidata_relations(graph_path):
@@ -129,6 +132,17 @@ def write_context_embeddings(entity_embedding_file, context_embedding_file, cont
             entity = line.split("\t", 1)[0]
             values = context_embeddings[entity]
             context_file.write(entity + "\t" + "\t".join(map(str, values)) + "\n")
+
+
+def copy_entity_embeddings_as_context(entity_embedding_file, context_embedding_file):
+    entity_embedding_path = Path(entity_embedding_file)
+    if not entity_embedding_path.exists():
+        raise FileNotFoundError(
+            f"Missing entity embeddings required to build offline context embeddings: {entity_embedding_path}"
+        )
+    context_embedding_path = Path(context_embedding_file)
+    content = entity_embedding_path.read_text(encoding="utf-8")
+    context_embedding_path.write_text(content, encoding="utf-8", newline="\n")
 
 
 def write_results_summary(summary_path, payload):
