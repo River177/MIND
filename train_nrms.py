@@ -1,5 +1,7 @@
 import os
 import pickle
+from pathlib import Path
+
 import tensorflow as tf
 
 from recommenders.models.newsrec.io.mind_iterator import MINDIterator
@@ -7,7 +9,11 @@ from recommenders.models.newsrec.models.nrms import NRMSModel
 from recommenders.models.newsrec.newsrec_utils import prepare_hparams
 
 
-BASE_DIR = "/home/njvivo/wuhao/MIND"
+def get_default_base_dir():
+    return os.environ.get("MIND_BASE_DIR", str(Path(__file__).resolve().parent))
+
+
+BASE_DIR = get_default_base_dir()
 DATA_DIR = os.path.join(BASE_DIR, "dataset")
 UTILS_DIR = os.path.join(DATA_DIR, "utils")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")

@@ -4,9 +4,14 @@ import pickle
 import argparse
 from collections import Counter
 import numpy as np
+from pathlib import Path
 
 
 PAT = re.compile(r"[\w]+|[.,!?;|]")
+
+
+def get_default_base_dir():
+    return os.environ.get("MIND_BASE_DIR", str(Path(__file__).resolve().parent))
 
 
 def word_tokenize(sent: str):
@@ -140,7 +145,7 @@ def save_pickle(obj, path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_dir", type=str, default="/home/njvivo/wuhao/MIND")
+    parser.add_argument("--base_dir", type=str, default=get_default_base_dir())
     parser.add_argument("--glove_file", type=str, required=True)
     parser.add_argument("--include_dev", action="store_true")
     parser.add_argument("--min_freq", type=int, default=1)
